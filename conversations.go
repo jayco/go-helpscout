@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+// Done ..
+type Done struct {
+	Ok     bool
+	ErrMsg string
+}
+
 // ConversationLister ..
 type ConversationLister interface {
 	Process(c Conversation) bool
@@ -216,8 +222,44 @@ type Conversation struct {
 	CustomFields    []CustomField        `json:"customFields"`
 }
 
-// ListConversations ..
-func (c *Client) ListConversations(filter *ConversationLookupFilter, lister ConversationLister) error {
+// List ..
+func (c *Client) List(query *url.Values, conversations chan []Conversation, done chan Done) {
+	page := 1
+	query.Del("page")
+	for {
+		var cList struct {
+			Conversations []Conversation `json:"conversations"`
+		}
+
+		req := &generalListAPICallReq{
+			Embedded: &cList,
+		}
+
+		err := c.doAPICall(http.MethodGet, "/conversations", query, nil, req)
+		if err != nil {
+			done <- Done{Ok: false, ErrMsg: err.Error()}
+			return
+		}
+
+		if req.Page.TotalPages == 0 {
+			break
+		}
+
+		conversations <- cList.Conversations
+
+		if req.Page.Number == req.Page.TotalPages {
+			break
+		}
+
+		page++
+		query.Set("page", strconv.Itoa(page))
+	}
+
+	done <- Done{Ok: true}
+}
+
+// ListByFilter ..
+func (c *Client) ListByFilter(filter *ConversationLookupFilter, lister ConversationLister) error {
 	query, err := prepareListConversationQuery(filter)
 	if err != nil {
 		return err
