@@ -8,36 +8,42 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrorInterrupted ..
 var ErrorInterrupted = errors.New("")
 
-const helpscoutApiEndpoint = "https://api.helpscout.net/v2"
+// helpscoutAPIEndpoint ..
+const helpscoutAPIEndpoint = "https://api.helpscout.net/v2"
 
+// Page ..
 type Page struct {
-	Size          uint `json:"size"`
-	TotalElements uint `json:"totalElements"`
-	TotalPages    uint `json:"totalPages"`
-	Number        uint `json:"number"`
+	Size          int `json:"size"`
+	TotalElements int `json:"totalElements"`
+	TotalPages    int `json:"totalPages"`
+	Number        int `json:"number"`
 }
 
-type generalListApiCallReq struct {
+type generalListAPICallReq struct {
 	Embedded interface{} `json:"_embedded"`
 	Page     Page        `json:"page"`
 }
 
+// Client ..
 type Client struct {
 	httpClient *httpClient
 	auth       *auth
 }
 
-func NewClient(appId string, appKey string) *Client {
-	httpClient := newHttpClient()
+// NewClient ..
+func NewClient(appID string, appKey string) *Client {
+	httpClient := newHTTPClient()
 
 	return &Client{
 		httpClient: httpClient,
-		auth:       newAuth(httpClient, appId, appKey),
+		auth:       newAuth(httpClient, appID, appKey),
 	}
 }
 
+// AuthKey ..
 func (c *Client) AuthKey(forceUpdate bool) (string, error) {
 	token, err := c.auth.getToken(forceUpdate)
 	if err != nil {
@@ -47,12 +53,14 @@ func (c *Client) AuthKey(forceUpdate bool) (string, error) {
 	return token, nil
 }
 
+// SetAuthKey ..
 func (c *Client) SetAuthKey(key string, expTime time.Time) {
 	c.auth.token = key
 	c.auth.tokenExpireTime = expTime
 }
 
-func (c *Client) doApiCall(method string, resource string, query *url.Values,
+// doAPICall ..
+func (c *Client) doAPICall(method string, resource string, query *url.Values,
 	reqData interface{}, respData interface{}) error {
 
 	repeatAllCnt := 0
@@ -63,7 +71,7 @@ func (c *Client) doApiCall(method string, resource string, query *url.Values,
 			return errors.Wrap(err, "Unable to update Auth Token")
 		}
 
-		url := helpscoutApiEndpoint + resource
+		url := helpscoutAPIEndpoint + resource
 
 		authHeader := make(map[string]string)
 		authHeader["Authorization"] = fmt.Sprintf("Bearer %s", token)

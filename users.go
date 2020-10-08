@@ -6,18 +6,21 @@ import (
 	"strconv"
 )
 
+// UsersLister ..
 type UsersLister interface {
 	Process(c User) bool
 }
 
+// User ..
 type User struct {
-	Id        uint   `json:"id"`
+	ID        int    `json:"id"`
 	Type      string `json:"type"`
 	FirstName string `json:"first"`
 	LastName  string `json:"last"`
 	Email     string `json:"email"`
 }
 
+// ListUsers ..
 func (c *Client) ListUsers(lister UsersLister) error {
 	page := 1
 	query := &url.Values{}
@@ -26,10 +29,10 @@ func (c *Client) ListUsers(lister UsersLister) error {
 			Users []User `json:"users"`
 		}
 
-		req := &generalListApiCallReq{
+		req := &generalListAPICallReq{
 			Embedded: &uList,
 		}
-		err := c.doApiCall(http.MethodGet, "/users", query, nil, req)
+		err := c.doAPICall(http.MethodGet, "/users", query, nil, req)
 		if err != nil {
 			return err
 		}

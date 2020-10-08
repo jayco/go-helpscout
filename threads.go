@@ -8,60 +8,97 @@ import (
 	"time"
 )
 
+// ThreadLister ..
 type ThreadLister interface {
 	Process(thread Thread) bool
 }
 
 const (
-	ThreadTypeBeaconchat    = "beaconchat"
-	ThreadTypeChat          = "chat"
-	ThreadTypeCustomer      = "customer"
-	ThreadTypeForwardChild  = "forwardchild"
+	// ThreadTypeBeaconchat ..
+	ThreadTypeBeaconchat = "beaconchat"
+
+	// ThreadTypeChat ..
+	ThreadTypeChat = "chat"
+
+	// ThreadTypeCustomer ..
+	ThreadTypeCustomer = "customer"
+
+	// ThreadTypeForwardChild ..
+	ThreadTypeForwardChild = "forwardchild"
+
+	// ThreadTypeForwardParent ..
 	ThreadTypeForwardParent = "forwardparent"
-	ThreadTypeLineitem      = "lineitem"
-	ThreadTypeMessage       = "message"
-	ThreadTypeNote          = "note"
-	ThreadTypePhone         = "phone"
-	ThreadTypeReply         = "reply"
-)
 
-const (
-	ThreadStatusActive   = "active"
-	ThreadStatusClosed   = "closed"
+	// ThreadTypeLineitem ..
+	ThreadTypeLineitem = "lineitem"
+
+	// ThreadTypeMessage ..
+	ThreadTypeMessage = "message"
+
+	// ThreadTypeNote ..
+	ThreadTypeNote = "note"
+
+	// ThreadTypePhone ..
+	ThreadTypePhone = "phone"
+
+	// ThreadTypeReply ..
+	ThreadTypeReply = "reply"
+
+	// ThreadStatusActive ..
+	ThreadStatusActive = "active"
+
+	// ThreadStatusClosed ..
+	ThreadStatusClosed = "closed"
+
+	// ThreadStatusNochange ..
 	ThreadStatusNochange = "nochange"
-	ThreadStatusPending  = "pending"
-	ThreadStatusSpam     = "spam"
-)
 
-const (
-	ThreadStateDraft     = "draft"
-	ThreadStateHidden    = "hidden"
+	// ThreadStatusPending ..
+	ThreadStatusPending = "pending"
+
+	// ThreadStatusSpam ..
+	ThreadStatusSpam = "spam"
+
+	// ThreadStateDraft ..
+	ThreadStateDraft = "draft"
+
+	// ThreadStateHidden ..d
+	ThreadStateHidden = "hidden"
+
+	// ThreadStatePublished ..
 	ThreadStatePublished = "published"
-	ThreadStateReview    = "review"
+
+	// ThreadStateReview ..
+	ThreadStateReview = "review"
 )
 
+// ThreadCreator ..
 type ThreadCreator struct {
-	Id        uint   `json:"id"`
+	ID        int    `json:"id"`
 	Type      string `json:"type"`
 	FirstName string `json:"first"`
 	LastName  string `json:"last"`
 	Email     string `json:"email"`
 }
 
+// ThreadSource ..
+type ThreadSource struct {
+	Via  string `json:"via"`
+	Type string `json:"type"`
+}
+
+// Thread ..
 type Thread struct {
-	Id         uint   `json:"id"`
-	Type       string `json:"type"`
-	AssignedTo User   `json:"assignedTo"`
-	Status     string `json:"status"`
-	State      string `json:"state"`
-	Body       string `json:"body"`
-	Source     struct {
-		Via  string `json:"via"`
-		Type string `json:"type"`
-	} `json:"source"`
+	ID           int           `json:"id"`
+	Type         string        `json:"type"`
+	AssignedTo   User          `json:"assignedTo"`
+	Status       string        `json:"status"`
+	State        string        `json:"state"`
+	Body         string        `json:"body"`
+	Source       ThreadSource  `json:"source"`
 	Customer     Customer      `json:"customer"`
 	CreatedBy    ThreadCreator `json:"createdBy"`
-	SavedReplyId uint          `json:"savedReplyId"`
+	SavedReplyID int           `json:"savedReplyId"`
 	To           []string      `json:"to"`
 	CC           []string      `json:"cc"`
 	BCC          []string      `json:"bcc"`
@@ -69,8 +106,9 @@ type Thread struct {
 	OpenedAt     time.Time     `json:"openedAt"`
 }
 
-func (c *Client) ListThreads(conversationId uint, lister ThreadLister) error {
-	resource := fmt.Sprintf("/conversations/%d/threads", conversationId)
+// ListThreads ..
+func (c *Client) ListThreads(conversationID int, lister ThreadLister) error {
+	resource := fmt.Sprintf("/conversations/%d/threads", conversationID)
 
 	query := &url.Values{}
 	page := 1
@@ -79,11 +117,11 @@ func (c *Client) ListThreads(conversationId uint, lister ThreadLister) error {
 			Threads []Thread `json:"threads"`
 		}
 
-		req := &generalListApiCallReq{
+		req := &generalListAPICallReq{
 			Embedded: &tList,
 		}
 
-		err := c.doApiCall(http.MethodGet, resource, query, nil, req)
+		err := c.doAPICall(http.MethodGet, resource, query, nil, req)
 		if err != nil {
 			return err
 		}

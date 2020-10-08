@@ -1,9 +1,11 @@
 package helpscout
 
+// Tag ..
 type Tag struct {
 }
 
+// TagShort ..
 type TagShort struct {
-	Id   uint   `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 }

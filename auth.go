@@ -10,7 +10,7 @@ import (
 const helpscoutAuthEndpoint = "https://api.helpscout.net/v2/oauth2/token"
 
 type authReqData struct {
-	ClientId     string `json:"client_id"`
+	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	GrantType    string `json:"grant_type"`
 }
@@ -19,14 +19,14 @@ type auth struct {
 	httpClient      *httpClient
 	token           string
 	tokenExpireTime time.Time
-	appId           string
+	appID           string
 	appKey          string
 }
 
-func newAuth(httpClient *httpClient, appId string, appKey string) *auth {
+func newAuth(httpClient *httpClient, appID string, appKey string) *auth {
 	return &auth{
 		httpClient:      httpClient,
-		appId:           appId,
+		appID:           appID,
 		appKey:          appKey,
 		token:           "",
 		tokenExpireTime: time.Time{},
@@ -41,12 +41,12 @@ func (a *auth) getToken(forceUpdate bool) (string, error) {
 	}
 
 	reqData := authReqData{
-		ClientId:     a.appId,
+		ClientID:     a.appID,
 		ClientSecret: a.appKey,
 		GrantType:    "client_credentials",
 	}
 
-	var responseJson struct {
+	var responseJSON struct {
 		ExpiresIn int    `json:"expires_in"`
 		Token     string `json:"access_token"`
 		TokenType string `json:"token_type"`
@@ -54,7 +54,7 @@ func (a *auth) getToken(forceUpdate bool) (string, error) {
 
 	repeatCnt := 0
 	for {
-		err := a.httpClient.doRequest(helpscoutAuthEndpoint, http.MethodPost, nil, nil, &reqData, &responseJson)
+		err := a.httpClient.doRequest(helpscoutAuthEndpoint, http.MethodPost, nil, nil, &reqData, &responseJSON)
 		if err == ErrorRateLimit {
 			time.Sleep(time.Second)
 			repeatCnt++
@@ -76,12 +76,12 @@ func (a *auth) getToken(forceUpdate bool) (string, error) {
 		break
 	}
 
-	if responseJson.Token == "" || responseJson.ExpiresIn <= 0 {
-		return "", errors.Errorf("Authorization server returned an invalid data: %+v", responseJson)
+	if responseJSON.Token == "" || responseJSON.ExpiresIn <= 0 {
+		return "", errors.Errorf("Authorization server returned an invalid data: %+v", responseJSON)
 	}
 
-	a.token = responseJson.Token
-	a.tokenExpireTime = time.Now().Add(time.Second * time.Duration(responseJson.ExpiresIn))
+	a.token = responseJSON.Token
+	a.tokenExpireTime = time.Now().Add(time.Second * time.Duration(responseJSON.ExpiresIn))
 
 	return a.token, nil
 }

@@ -1,5 +1,6 @@
 package helpscout
 
+// Mailbox ..
 type Mailbox struct {
-	Id uint `json:"id"`
+	ID int `json:"id"`
 }

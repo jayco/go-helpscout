@@ -13,14 +13,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrorRateLimit = errors.New("")
-var ErrorUnauthorized = errors.New("")
+var (
+	// ErrorRateLimit ..
+	ErrorRateLimit = errors.New("")
+
+	// ErrorUnauthorized ..
+	ErrorUnauthorized = errors.New("")
+)
 
 type httpClient struct {
 	http.Client
 }
 
-func newHttpClient() *httpClient {
+func newHTTPClient() *httpClient {
 	return &httpClient{
 		http.Client{
 			Timeout: time.Second * 10,

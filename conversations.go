@@ -9,48 +9,67 @@ import (
 	"time"
 )
 
+// ConversationLister ..
 type ConversationLister interface {
 	Process(c Conversation) bool
 }
 
+// ConditionType ..
 type ConditionType int
 
 const (
+	// Inclusively ..
 	Inclusively ConditionType = 1
+
+	// Exclusively ..
 	Exclusively ConditionType = 2
-)
 
-const (
-	ByUser     = "user"
+	// ByUser ..
+	ByUser = "user"
+
+	// ByCustomer ..
 	ByCustomer = "customer"
-)
 
-const (
+	// ConversationTypeEmail ..
 	ConversationTypeEmail = "email"
-	ConversationTypeChat  = "chat"
+
+	// ConversationTypeChat ..
+	ConversationTypeChat = "chat"
+
+	// ConversationTypePhone ..
 	ConversationTypePhone = "phone"
-)
 
-const (
-	ConversationStatusOpen    = "open"
-	ConversationStatusClosed  = "closed"
-	ConversationStatusActive  = "active"
+	// ConversationStatusOpen ..
+	ConversationStatusOpen = "open"
+
+	// ConversationStatusClosed ..
+	ConversationStatusClosed = "closed"
+
+	// ConversationStatusActive ..
+	ConversationStatusActive = "active"
+
+	// ConversationStatusPending ..
 	ConversationStatusPending = "pending"
-	ConversationStatusSpam    = "spam"
-)
 
-const (
+	// ConversationStatusSpam ..
+	ConversationStatusSpam = "spam"
+
+	// ConversationStatePublished ..
 	ConversationStatePublished = "published"
-	ConversationStateDraft     = "draft"
-	ConversationStateDeleted   = "deleted"
+
+	// ConversationStateDraft ..
+	ConversationStateDraft = "draft"
+
+	// ConversationStateDeleted  ..
+	ConversationStateDeleted = "deleted"
 )
 
-type filterUintValues struct {
+type filterIntValues struct {
 	cType  ConditionType
-	values []uint
+	values []int
 }
 
-func (v *filterUintValues) Set(values []uint, cType ConditionType) {
+func (v *filterIntValues) Set(values []int, cType ConditionType) {
 	v.values = values
 	v.cType = cType
 }
@@ -77,8 +96,9 @@ func (v *filterTimePeriod) Set(from time.Time, to time.Time, cType ConditionType
 	v.cType = cType
 }
 
+// ConversationLookupFilter ..
 type ConversationLookupFilter struct {
-	mailboxIds    *filterUintValues
+	mailboxIds    *filterIntValues
 	statuses      *filterStringValues
 	types         *filterStringValues
 	states        *filterStringValues
@@ -86,6 +106,7 @@ type ConversationLookupFilter struct {
 	updatedPeriod *filterTimePeriod
 }
 
+// NewConversationLookupFilter ..
 func NewConversationLookupFilter() *ConversationLookupFilter {
 	return &ConversationLookupFilter{}
 }
@@ -102,13 +123,15 @@ func getConditionType(cType []ConditionType) ConditionType {
 	return cType[0]
 }
 
-func (f *ConversationLookupFilter) MailboxIds(ids []uint, cType ...ConditionType) {
+// MailboxIds ..
+func (f *ConversationLookupFilter) MailboxIds(ids []int, cType ...ConditionType) {
 	if f.mailboxIds == nil {
-		f.mailboxIds = &filterUintValues{}
+		f.mailboxIds = &filterIntValues{}
 	}
 	f.mailboxIds.Set(ids, getConditionType(cType))
 }
 
+// Status ..
 func (f *ConversationLookupFilter) Status(statuses []string, cType ...ConditionType) {
 	if f.statuses == nil {
 		f.statuses = &filterStringValues{}
@@ -116,6 +139,7 @@ func (f *ConversationLookupFilter) Status(statuses []string, cType ...ConditionT
 	f.statuses.Set(statuses, getConditionType(cType))
 }
 
+// State ..
 func (f *ConversationLookupFilter) State(states []string, cType ...ConditionType) {
 	if f.states == nil {
 		f.states = &filterStringValues{}
@@ -123,6 +147,7 @@ func (f *ConversationLookupFilter) State(states []string, cType ...ConditionType
 	f.states.Set(states, getConditionType(cType))
 }
 
+// Type ..
 func (f *ConversationLookupFilter) Type(types []string, cType ...ConditionType) {
 	if f.types == nil {
 		f.types = &filterStringValues{}
@@ -130,6 +155,7 @@ func (f *ConversationLookupFilter) Type(types []string, cType ...ConditionType) 
 	f.types.Set(types, getConditionType(cType))
 }
 
+// CreatedTime ..
 func (f *ConversationLookupFilter) CreatedTime(from time.Time, to time.Time, cType ...ConditionType) {
 	if f.createdPeriod == nil {
 		f.createdPeriod = &filterTimePeriod{}
@@ -137,6 +163,7 @@ func (f *ConversationLookupFilter) CreatedTime(from time.Time, to time.Time, cTy
 	f.createdPeriod.Set(from, to, getConditionType(cType))
 }
 
+// ModifiedTime ..
 func (f *ConversationLookupFilter) ModifiedTime(from time.Time, to time.Time, cType ...ConditionType) {
 	if f.updatedPeriod == nil {
 		f.updatedPeriod = &filterTimePeriod{}
@@ -144,91 +171,52 @@ func (f *ConversationLookupFilter) ModifiedTime(from time.Time, to time.Time, cT
 	f.updatedPeriod.Set(from, to, getConditionType(cType))
 }
 
+// AnsweredBy ..
+type AnsweredBy struct {
+	Time               time.Time `json:"time"`
+	FriendlyWaitPeriod string    `json:"friendly"`
+	By                 string    `json:"latestReplyFrom"`
+}
+
+// ConversationSource ..
+type ConversationSource struct {
+	Via  string `json:"via"`
+	Type string `json:"type"`
+}
+
+// ConversationCustomer ..
+type ConversationCustomer struct {
+	ID int `json:"id"`
+}
+
+// Conversation ..
 type Conversation struct {
-	Id        uint      `json:"id"`
-	Number    uint      `json:"number"`
-	Threads   uint      `json:"threads"`
-	Type      string    `json:"type"`
-	FolderId  uint      `json:"folderId"`
-	Status    string    `json:"status"`
-	State     string    `json:"state"`
-	Subject   string    `json:"subject"`
-	Preview   string    `json:"preview"`
-	MailboxId uint      `json:"mailboxId"`
-	Assignee  User      `json:"assignee"`
-	CreatedBy User      `json:"createdBy"`
-	CreatedAt time.Time `json:"createdAt"`
-	ClosedAt  time.Time `json:"closedAt"`
-	UpdatedAt time.Time `json:"userUpdatedAt"`
-	ClosedBy  uint      `json:"closedBy"`
-	Answered  struct {
-		Time               time.Time `json:"time"`
-		FriendlyWaitPeriod string    `json:"friendly"`
-		By                 string    `json:"latestReplyFrom"`
-	} `json:"customerWaitingSince"`
-	Source struct {
-		Via  string `json:"via"`
-		Type string `json:"type"`
-	} `json:"source"`
-	Tags            []TagShort `json:"tags"`
-	CC              []string   `json:"cc"`
-	BCC             []string   `json:"bcc"`
-	PrimaryCustomer struct {
-		Id uint `json:"id"`
-	} `json:"primaryCustomer"`
-	CustomFields []CustomField `json:"customFields"`
+	ID              int                  `json:"id"`
+	Number          int                  `json:"number"`
+	Threads         int                  `json:"threads"`
+	Type            string               `json:"type"`
+	FolderID        int                  `json:"folderId"`
+	Status          string               `json:"status"`
+	State           string               `json:"state"`
+	Subject         string               `json:"subject"`
+	Preview         string               `json:"preview"`
+	MailboxID       int                  `json:"mailboxId"`
+	Assignee        User                 `json:"assignee"`
+	CreatedBy       User                 `json:"createdBy"`
+	CreatedAt       time.Time            `json:"createdAt"`
+	ClosedAt        time.Time            `json:"closedAt"`
+	UpdatedAt       time.Time            `json:"userUpdatedAt"`
+	ClosedBy        int                  `json:"closedBy"`
+	Answered        AnsweredBy           `json:"customerWaitingSince"`
+	Source          ConversationSource   `json:"source"`
+	Tags            []TagShort           `json:"tags"`
+	CC              []string             `json:"cc"`
+	BCC             []string             `json:"bcc"`
+	PrimaryCustomer ConversationCustomer `json:"primaryCustomer"`
+	CustomFields    []CustomField        `json:"customFields"`
 }
 
-type ConversationThread struct {
-	Type     string   `json:"type"`
-	Body     string   `json:"text"`
-	Cc       []string `json:"cc"`
-	Bcc      []string `json:"bcc"`
-	Customer struct {
-		Email string `json:"email"`
-	} `json:"customer"`
-}
-
-type ConversationCreateRequest struct {
-	Type     string `json:"type"`
-	Customer struct {
-		Email string `json:"email"`
-	} `json:"customer"`
-	Subject   string               `json:"subject"`
-	MailboxId uint                 `json:"mailboxId"`
-	Tags      []string             `json:"tags"`
-	Status    string               `json:"status"`
-	CreatedBy uint                 `json:"user"`
-	Threads   []ConversationThread `json:"threads"`
-}
-
-func (c *Client) CreateConversation(sender User, mailboxId uint,
-	to []string, cc []string, bcc []string, subject string, body string) error {
-
-	conversation := ConversationCreateRequest{
-		Type:      ConversationTypeEmail,
-		Status:    ConversationStatusActive,
-		CreatedBy: sender.Id,
-		Tags:      []string{"upstream"},
-		Threads:   make([]ConversationThread, 1),
-		Subject:   subject,
-		MailboxId: mailboxId,
-	}
-
-	conversation.Customer.Email = to[0]
-
-	conversation.Threads[0] = ConversationThread{
-		Type: ThreadTypeReply,
-		Body: body,
-		Cc:   append(cc, to[1:]...),
-		Bcc:  bcc,
-	}
-
-	conversation.Threads[0].Customer.Email = to[0]
-
-	return c.doApiCall(http.MethodPost, "/conversations", nil, &conversation, nil)
-}
-
+// ListConversations ..
 func (c *Client) ListConversations(filter *ConversationLookupFilter, lister ConversationLister) error {
 	query, err := prepareListConversationQuery(filter)
 	if err != nil {
@@ -259,10 +247,10 @@ func (c *Client) listConversationsImpl(query *url.Values, lister ConversationLis
 			Conversations []Conversation `json:"conversations"`
 		}
 
-		req := &generalListApiCallReq{
+		req := &generalListAPICallReq{
 			Embedded: &cList,
 		}
-		err := c.doApiCall(http.MethodGet, "/conversations", query, nil, req)
+		err := c.doAPICall(http.MethodGet, "/conversations", query, nil, req)
 		if err != nil {
 			return err
 		}
@@ -307,7 +295,7 @@ func prepareListOfStatuses(filter *ConversationLookupFilter) []string {
 				delete(m, v)
 			}
 
-			for k, _ := range m {
+			for k := range m {
 				statuses = append(statuses, k)
 			}
 		default:

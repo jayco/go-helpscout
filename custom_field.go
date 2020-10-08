@@ -1,7 +1,8 @@
 package helpscout
 
+// CustomField ..
 type CustomField struct {
-	Id    uint   `json:"id"`
+	ID    int    `json:"id"`
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
