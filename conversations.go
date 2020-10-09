@@ -1,24 +1,15 @@
 package helpscout
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
-
-// Done ..
-type Done struct {
-	Ok     bool
-	ErrMsg string
-}
-
-// ConversationLister ..
-type ConversationLister interface {
-	Process(c Conversation) bool
-}
 
 // ConditionType ..
 type ConditionType int
@@ -222,103 +213,55 @@ type Conversation struct {
 	CustomFields    []CustomField        `json:"customFields"`
 }
 
+// ConverationResponse ..
+type ConverationResponse struct {
+	Conversations []Conversation `json:"conversations"`
+	Error         error
+}
+
 // List ..
-func (c *Client) List(query *url.Values, conversations chan []Conversation, done chan Done) {
-	page := 1
+func (c *Client) List(query *url.Values, conversations chan ConverationResponse) {
 	query.Del("page")
-	for {
-		var cList struct {
-			Conversations []Conversation `json:"conversations"`
+	var check ConverationResponse
+	req := &generalListAPICallReq{Embedded: &check}
+
+	// Let's do an initial call to the API and figure out how many pages we have, return early if we have no work
+	err := c.doAPICall(http.MethodGet, "/conversations", query, nil, req)
+	if err != nil || req.Page.Number == req.Page.TotalPages {
+		if err == nil {
+			err = errors.New("Nothing to fetch")
 		}
 
-		req := &generalListAPICallReq{
-			Embedded: &cList,
-		}
-
-		err := c.doAPICall(http.MethodGet, "/conversations", query, nil, req)
-		if err != nil {
-			done <- Done{Ok: false, ErrMsg: err.Error()}
-			return
-		}
-
-		if req.Page.TotalPages == 0 {
-			break
-		}
-
-		conversations <- cList.Conversations
-
-		if req.Page.Number == req.Page.TotalPages {
-			break
-		}
-
-		page++
-		query.Set("page", strconv.Itoa(page))
+		check.Error = err
+		conversations <- check
+		return
 	}
 
-	done <- Done{Ok: true}
-}
+	// Fetch all remaining pages
+	var wg sync.WaitGroup
+	for i := req.Page.Number + 1; i < req.Page.TotalPages; i++ {
+		query.Set("page", strconv.Itoa(i))
+		go func(q *url.Values) {
+			wg.Add(1)
+			defer wg.Done()
 
-// ListByFilter ..
-func (c *Client) ListByFilter(filter *ConversationLookupFilter, lister ConversationLister) error {
-	query, err := prepareListConversationQuery(filter)
-	if err != nil {
-		return err
-	}
+			var response ConverationResponse
 
-	if filter.statuses == nil {
-		return c.listConversationsImpl(query, lister)
-	}
-
-	statuses := prepareListOfStatuses(filter)
-	for _, status := range statuses {
-		query.Set("status", status)
-		err := c.listConversationsImpl(query, lister)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *Client) listConversationsImpl(query *url.Values, lister ConversationLister) error {
-	page := 1
-	query.Del("page")
-	for {
-		var cList struct {
-			Conversations []Conversation `json:"conversations"`
-		}
-
-		req := &generalListAPICallReq{
-			Embedded: &cList,
-		}
-		err := c.doAPICall(http.MethodGet, "/conversations", query, nil, req)
-		if err != nil {
-			return err
-		}
-
-		if req.Page.TotalPages == 0 {
-			break
-		}
-
-		for _, conversation := range cList.Conversations {
-			if !lister.Process(conversation) {
-				return ErrorInterrupted
+			r := &generalListAPICallReq{
+				Embedded: &response,
 			}
-		}
 
-		if req.Page.Number == req.Page.TotalPages {
-			break
-		}
-
-		page++
-		query.Set("page", strconv.Itoa(page))
+			err := c.doAPICall(http.MethodGet, "/conversations", q, nil, r)
+			response.Error = err
+			conversations <- response
+		}(query)
 	}
 
-	return nil
+	wg.Wait()
 }
 
-func prepareListOfStatuses(filter *ConversationLookupFilter) []string {
+// PrepareListOfStatuses ..
+func (c *Client) PrepareListOfStatuses(filter *ConversationLookupFilter) []string {
 	var statuses []string
 	if filter.statuses != nil {
 		switch filter.statuses.cType {
@@ -348,7 +291,8 @@ func prepareListOfStatuses(filter *ConversationLookupFilter) []string {
 	return statuses
 }
 
-func prepareListConversationQuery(filter *ConversationLookupFilter) (*url.Values, error) {
+// PrepareListConversationQuery ..
+func (c *Client) PrepareListConversationQuery(filter *ConversationLookupFilter) (*url.Values, error) {
 	if filter == nil {
 		return &url.Values{}, nil
 	}
