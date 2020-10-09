@@ -1,7 +1,6 @@
 package helpscout
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -227,12 +226,13 @@ func (c *Client) List(query *url.Values, conversations chan ConverationResponse)
 
 	// Let's do an initial call to the API and figure out how many pages we have, return early if we have no work
 	err := c.doAPICall(http.MethodGet, "/conversations", query, nil, req)
-	if err != nil || req.Page.Number == req.Page.TotalPages {
-		if err == nil {
-			err = errors.New("Nothing to fetch")
-		}
-
+	if err != nil {
 		check.Error = err
+		conversations <- check
+		return
+	}
+
+	if req.Page.Number == req.Page.TotalPages {
 		conversations <- check
 		return
 	}
