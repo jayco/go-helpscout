@@ -219,7 +219,7 @@ type ConverationResponse struct {
 }
 
 // List ..
-func (c *Client) List(query *url.Values, conversations chan ConverationResponse) {
+func (c *Client) List(query *url.Values, conversations chan ConverationResponse, done chan bool) {
 	query.Del("page")
 	var check ConverationResponse
 	req := &generalListAPICallReq{Embedded: &check}
@@ -258,6 +258,7 @@ func (c *Client) List(query *url.Values, conversations chan ConverationResponse)
 	}
 
 	wg.Wait()
+	done <- true
 }
 
 // PrepareListOfStatuses ..
